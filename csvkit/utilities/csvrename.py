@@ -24,7 +24,7 @@ class CSVCut(CSVKitUtility):
         self.argparser.add_argument('-c', '--columns', dest='sources',
             help='A comma separated list of column indices or names to be extracted. Defaults to all columns.')
         self.argparser.add_argument('-r', '--renames', dest='renames',
-            help='A comma separated list of new column names. Defaults to all columns.')
+            help='A comma separated list of new column names. Defaults to all columns. Does not support indices. ')
 
     def main(self):
         
@@ -45,22 +45,22 @@ class CSVCut(CSVKitUtility):
         else:
             column_names = next(rows)
 
+        import sys
+
         # Project Column Names
-        all_column_ids = [ i for i,n in enumerate(column_names) ]
+        target_names = self.args.renames.split(',')
         source_column_ids = parse_column_identifiers(self.args.sources, column_names, zero_based=self.args.zero_based)
-        
-        projected_column_names = [ n for n in column_names ]
-        
-        for idx, name in zip(source_column_ids, self.args.renames.split(',')):
-            projected_column_names[idx] = name
+
+        assert len(target_names) == len(source_column_ids) and "Input sources and rename columns must be the same length!"
         
         output = CSVKitWriter(self.output_file, **self.writer_kwargs)
         
-        output.writerow(projected_column_names)
+        # print header from target
+        output.writerow(target_names)
 
         # Rewrite Rows
         for row in rows:
-            out_row = [row[c] if c < len(row) else None for c in all_column_ids]
+            out_row = [row[c] if c < len(row) else None for c in source_column_ids]
 
             output.writerow(out_row)
 
